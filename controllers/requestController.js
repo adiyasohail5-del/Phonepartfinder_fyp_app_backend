@@ -299,8 +299,9 @@ async function respondToRequest(req, res, next) {
       });
     }
 
-    // Update request status
-    await RequestModel.updateStatus(requestId, status);
+    // Update request status — use 'responded' for available so customer sees Review button
+    const dbStatus = status === 'available' ? 'responded' : 'not_available';
+    await RequestModel.updateStatus(requestId, dbStatus);
 
     // Trigger notification to customer user (wrapped in try/catch)
     try {
@@ -308,7 +309,7 @@ async function respondToRequest(req, res, next) {
       const part = await PartModel.findById(request.part_id);
 
       if (customerRecord && part) {
-        const statusDisplay = status === 'available' ? 'Available' : 'Not Available';
+        const statusDisplay = status === 'available' ? 'Available ✅' : 'Not Available ❌';
         await NotificationModel.create({
           userId: customerRecord.user_id,
           message: `Vendor responded to your request for ${part.model_name}: ${statusDisplay}`,
@@ -323,7 +324,7 @@ async function respondToRequest(req, res, next) {
     res.json({
       success: true,
       message: 'Request response submitted successfully',
-      data: { id: parseInt(requestId, 10), status }
+      data: { id: parseInt(requestId, 10), status: dbStatus }
     });
   } catch (error) {
     next(error);
@@ -482,37 +483,11 @@ async function cancelRequestByVendor(req, res, next) {
     // 2. Restore Part Stock Quantity
     await PartModel.restoreStock(request.part_id);
 
-    // 3. Increment Vendor Cancellation Counter
+    // 3. Increment Vendor Cancellation Counter for analytics/tracking
     const updatedVendor = await VendorModel.incrementCancellationCount(vendor.id);
     const newCancelCount = updatedVendor.cancellation_count || 1;
 
-    let maxLimit = 3;
-    try {
-      const val = await SystemSettingModel.getSettingValue('max_vendor_cancellations');
-      if (val && !isNaN(val)) {
-        maxLimit = parseInt(val, 10);
-      }
-    } catch (_) {}
-
-    const isAutoBlocked = newCancelCount >= maxLimit;
-
-    // 4. Auto-block Vendor if cancellation count reaches limit (3 or 4)
-    if (isAutoBlocked) {
-      await UserModel.updateStatus(vendor.user_id, 'blocked');
-
-      try {
-        await NotificationModel.create({
-          userId: vendor.user_id,
-          message: `🚨 ACCOUNT AUTOMATICALLY BLOCKED: Your vendor account has been blocked because you cancelled ${newCancelCount} orders (Cancellation Limit: ${maxLimit}). Reason: Exceeded online order cancellation limit.`,
-          type: 'system',
-          isRead: 0
-        });
-      } catch (notifErr) {
-        console.error('Failed to notify vendor of auto-block:', notifErr.message);
-      }
-    }
-
-    // 5. Notify Customer about cancellation
+    // 4. Notify Customer about cancellation
     try {
       const customerRecord = await CustomerModel.findById(request.customer_id);
       const part = await PartModel.findById(request.part_id);
@@ -530,15 +505,13 @@ async function cancelRequestByVendor(req, res, next) {
       console.error('Customer notification failed on cancellation:', notifErr.message);
     }
 
-    // 6. Notify All Admins about Vendor Cancellation & Auto-Block Status
+    // 5. Notify All Admins about Vendor Cancellation log
     try {
       const adminUsers = await UserModel.getAdminUsers();
       const part = await PartModel.findById(request.part_id);
       const partModelName = part ? part.model_name : 'product';
 
-      const adminMsg = isAutoBlocked
-        ? `🚨 VENDOR AUTO-BLOCKED: Vendor '${updatedVendor.shop_name}' (ID: ${vendor.id}) cancelled Order #${requestId} (${partModelName}) and was AUTOMATICALLY BLOCKED after reaching ${newCancelCount}/${maxLimit} order cancellations!`
-        : `⚠️ ORDER CANCELLED BY VENDOR: Vendor '${updatedVendor.shop_name}' cancelled Order #${requestId} (${partModelName}). Reason: ${cancelReason}. Vendor total cancellations: ${newCancelCount}/${maxLimit}.`;
+      const adminMsg = `⚠️ ORDER CANCELLED BY VENDOR: Vendor '${updatedVendor.shop_name}' cancelled Order #${requestId} (${partModelName}). Reason: ${cancelReason}.`;
 
       for (const adminUser of adminUsers) {
         await NotificationModel.create({
@@ -554,12 +527,147 @@ async function cancelRequestByVendor(req, res, next) {
 
     res.json({
       success: true,
-      is_auto_blocked: isAutoBlocked,
+      is_auto_blocked: false,
       cancellation_count: newCancelCount,
-      message: isAutoBlocked
-        ? `Order cancelled. 🚨 WARNING: Your account has been AUTOMATICALLY BLOCKED due to reaching the cancellation limit of ${maxLimit} orders.`
-        : `Order cancelled successfully. Total vendor cancellations: ${newCancelCount}/${maxLimit}.`,
+      message: 'Order cancelled successfully. Part stock restored to inventory.',
       data: { id: parseInt(requestId, 10), status: 'cancelled', cancellation_count: newCancelCount }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Customer confirms receipt of part delivery (Option 2 - Manual Confirmation)
+ */
+async function confirmDeliveryManual(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const customer = await CustomerModel.findByUserId(userId);
+    if (!customer) {
+      res.status(404);
+      throw new Error('Customer profile not found');
+    }
+
+    const requestId = req.params.id;
+    const request = await RequestModel.findById(requestId);
+    if (!request) {
+      res.status(404);
+      throw new Error('Request not found');
+    }
+
+    if (request.customer_id !== customer.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden. You do not own this order.'
+      });
+    }
+
+    if (request.status === 'delivered') {
+      return res.status(400).json({
+        success: false,
+        message: 'This delivery has already been confirmed as delivered.'
+      });
+    }
+
+    await RequestModel.confirmDeliveryCustomer(requestId, customer.id);
+    await PartModel.markOutOfStock(request.part_id);
+
+    // Notify Vendor
+    try {
+      const vendor = await VendorModel.findById(request.vendor_id);
+      const part = await PartModel.findById(request.part_id);
+      if (vendor) {
+        await NotificationModel.create({
+          userId: vendor.user_id,
+          message: `✅ Order #${requestId} (${part ? part.model_name : 'Component'}) delivery was confirmed by the customer! Sale completed.`,
+          type: 'response',
+          isRead: 0
+        });
+      }
+    } catch (_) {}
+
+    res.json({
+      success: true,
+      message: 'Delivery confirmed successfully! You can now leave a review for this vendor.',
+      data: { id: parseInt(requestId, 10), status: 'delivered' }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Customer Order Cancellation (Cancels pending/responded order, restores stock, notifies vendor)
+ */
+async function cancelRequestByCustomer(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const customer = await CustomerModel.findByUserId(userId);
+    if (!customer) {
+      res.status(404);
+      throw new Error('Customer profile not found');
+    }
+
+    const requestId = req.params.id;
+    const { reason } = req.body;
+    const cancelReason = reason && reason.trim() !== '' ? reason.trim() : 'Customer cancelled order';
+
+    const request = await RequestModel.findById(requestId);
+    if (!request) {
+      res.status(404);
+      throw new Error('Request not found');
+    }
+
+    if (request.customer_id !== customer.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden. You do not own this order.'
+      });
+    }
+
+    if (request.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'This request has already been cancelled.'
+      });
+    }
+
+    if (request.status === 'delivered') {
+      return res.status(400).json({
+        success: false,
+        message: 'Completed orders cannot be cancelled.'
+      });
+    }
+
+    // 1. Update Request status to cancelled by customer
+    await RequestModel.cancelByCustomer(requestId, customer.id, cancelReason);
+
+    // 2. Restore Part Stock Quantity
+    await PartModel.restoreStock(request.part_id);
+
+    // 3. Notify Vendor
+    try {
+      const vendorRecord = await VendorModel.findById(request.vendor_id);
+      const part = await PartModel.findById(request.part_id);
+      const partModelName = part ? part.model_name : 'product';
+
+      if (vendorRecord) {
+        await NotificationModel.create({
+          userId: vendorRecord.user_id,
+          message: `Customer cancelled Order #${requestId} (${partModelName}). Reason: ${cancelReason}`,
+          type: 'response',
+          isRead: 0
+        });
+      }
+    } catch (notifErr) {
+      console.error('Vendor notification failed on customer cancellation:', notifErr.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully. Part stock restored.',
+      data: { id: parseInt(requestId, 10), status: 'cancelled' }
     });
   } catch (error) {
     next(error);
@@ -572,5 +680,7 @@ module.exports = {
   getVendorRequests,
   respondToRequest,
   cancelRequestByVendor,
-  verifyDelivery
+  cancelRequestByCustomer,
+  verifyDelivery,
+  confirmDeliveryManual
 };
