@@ -78,7 +78,7 @@ class RequestModel {
         r.delivery_type, r.delivery_address, r.delivery_city, r.delivery_phone, r.delivery_notes,
         r.delivery_fee, r.total_amount,
         r.cancellation_reason, r.cancelled_by, r.cancelled_at,
-        p.id as part_id, p.model_name, p.price, p.image_url,
+        p.id as part_id, p.model_name, p.price, p.image_url, p.original_photo_url,
         v.id as vendor_id, v.user_id as vendor_user_id, v.shop_name, v.city as vendor_city, v.address as vendor_address,
         b.name as brand_name, pt.name as part_type_name
       FROM requests r
@@ -140,9 +140,19 @@ class RequestModel {
 
   static async verifyDelivery(requestId, barcode) {
     await pool.execute(
-      `UPDATE requests SET verified_barcode = ?, verified_at = NOW(), status = 'available' WHERE id = ?`,
+      `UPDATE requests SET verified_barcode = ?, verified_at = NOW(), status = 'delivered' WHERE id = ?`,
       [barcode, requestId]
     );
+  }
+
+  static async confirmDeliveryCustomer(requestId, customerId) {
+    const [result] = await pool.execute(
+      `UPDATE requests 
+       SET status = 'delivered', verified_at = NOW() 
+       WHERE id = ? AND customer_id = ?`,
+      [requestId, customerId]
+    );
+    return result.affectedRows > 0;
   }
 
   static async cancelByVendor(requestId, cancelReason) {
@@ -152,6 +162,16 @@ class RequestModel {
        WHERE id = ?`,
       [cancelReason, requestId]
     );
+  }
+
+  static async cancelByCustomer(requestId, customerId, cancelReason) {
+    const [result] = await pool.execute(
+      `UPDATE requests 
+       SET status = 'cancelled', cancellation_reason = ?, cancelled_by = 'customer', cancelled_at = NOW() 
+       WHERE id = ? AND customer_id = ?`,
+      [cancelReason, requestId, customerId]
+    );
+    return result.affectedRows > 0;
   }
 
   static async unlockLeads(customerId, vendorId) {
@@ -164,6 +184,62 @@ class RequestModel {
   static async countAll() {
     const [rows] = await pool.execute('SELECT COUNT(*) as count FROM requests');
     return rows[0].count;
+  }
+
+  static async countSoldParts() {
+    const [rows] = await pool.execute(
+      "SELECT COUNT(*) as count FROM requests WHERE status = 'delivered' OR verified_at IS NOT NULL"
+    );
+    return rows[0].count;
+  }
+
+  static async getTotalSalesGMV() {
+    const [rows] = await pool.execute(
+      "SELECT COALESCE(SUM(total_amount), 0) as total FROM requests WHERE status = 'delivered' OR verified_at IS NOT NULL"
+    );
+    return parseFloat(rows[0].total) || 0.0;
+  }
+
+  static async getSalesProofListAdmin() {
+    const [rows] = await pool.execute(`
+      SELECT 
+        r.id as request_id,
+        r.status,
+        r.delivery_type,
+        r.delivery_fee,
+        r.total_amount,
+        r.verified_barcode,
+        r.verified_at,
+        r.created_at,
+        p.id as part_id,
+        p.model_name,
+        p.price as part_price,
+        p.image_url,
+        p.original_photo_url,
+        p.barcode_number,
+        b.name as brand_name,
+        pt.name as part_type_name,
+        v.id as vendor_id,
+        v.shop_name,
+        v.city as vendor_city,
+        u_vend.name as vendor_owner_name,
+        u_vend.phone as vendor_phone,
+        u_cust.name as customer_name,
+        u_cust.email as customer_email,
+        u_cust.phone as customer_phone,
+        c.city as customer_city
+      FROM requests r
+      JOIN parts p ON r.part_id = p.id
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN part_types pt ON p.part_type_id = pt.id
+      JOIN vendors v ON r.vendor_id = v.id
+      JOIN users u_vend ON v.user_id = u_vend.id
+      JOIN customers c ON r.customer_id = c.id
+      JOIN users u_cust ON c.user_id = u_cust.id
+      WHERE r.status = 'delivered' OR r.verified_at IS NOT NULL
+      ORDER BY r.verified_at DESC, r.created_at DESC
+    `);
+    return rows;
   }
 }
 
