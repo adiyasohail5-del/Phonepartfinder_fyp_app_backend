@@ -2,14 +2,11 @@ const ReviewModel = require('../models/ReviewModel');
 const CustomerModel = require('../models/CustomerModel');
 const RequestModel = require('../models/RequestModel');
 
-/**
- * Allows a customer to submit a review for a responded/available request.
- */
+
 async function addReview(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Find customer profile
     const customer = await CustomerModel.findByUserId(userId);
     if (!customer) {
       res.status(404);
@@ -28,14 +25,12 @@ async function addReview(req, res, next) {
       throw new Error('Rating must be a number between 1 and 5');
     }
 
-    // Get request by ID
     const request = await RequestModel.findById(request_id);
     if (!request) {
       res.status(404);
       throw new Error('Request not found');
     }
 
-    // Ownership check: confirm request belongs to this customer
     if (request.customer_id !== customer.id) {
       return res.status(403).json({
         success: false,
@@ -43,7 +38,6 @@ async function addReview(req, res, next) {
       });
     }
 
-    // Confirm request status is 'delivered', 'responded', or 'available'
     const allowedStatuses = ['delivered', 'responded', 'available'];
     if (!allowedStatuses.includes(request.status)) {
       return res.status(400).json({
@@ -52,7 +46,6 @@ async function addReview(req, res, next) {
       });
     }
 
-    // Confirm no existing review for this request_id
     const existingReview = await ReviewModel.findByRequestId(request_id);
     if (existingReview) {
       return res.status(400).json({
@@ -61,7 +54,7 @@ async function addReview(req, res, next) {
       });
     }
 
-    // Create review
+
     const createdReview = await ReviewModel.create({
       requestId: request_id,
       customerId: customer.id,
@@ -80,9 +73,6 @@ async function addReview(req, res, next) {
   }
 }
 
-/**
- * Public endpoint to fetch all reviews for a specific vendor along with calculated average rating.
- */
 async function getVendorReviews(req, res, next) {
   try {
     const vendorId = req.params.vendorId;

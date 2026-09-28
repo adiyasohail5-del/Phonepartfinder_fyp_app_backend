@@ -2,10 +2,6 @@ const { verifyToken } = require('./utils');
 const multer = require('multer');
 const path = require('path');
 
-/**
- * Authentication Middleware
- * Validates the JWT in the Authorization header and attaches the user payload to the request object.
- */
 function verifyTokenMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,7 +14,7 @@ function verifyTokenMiddleware(req, res, next) {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = verifyToken(token);
-    req.user = decoded; // Attach { id, role } to req.user
+    req.user = decoded; 
     next();
   } catch (error) {
     return res.status(401).json({
@@ -28,10 +24,6 @@ function verifyTokenMiddleware(req, res, next) {
   }
 }
 
-/**
- * Authorization Role Middleware
- * Restricts access to routes based on user role.
- */
 function authorizeRoles(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
@@ -46,9 +38,6 @@ function authorizeRoles(...allowedRoles) {
 
 const fs = require('fs');
 
-/**
- * Configure disk storage for Multer uploads
- */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let subfolder = 'parts';
@@ -74,9 +63,6 @@ const storage = multer.diskStorage({
   }
 });
 
-/**
- * Validate image extensions for uploads
- */
 const fileFilter = (req, file, cb) => {
   const allowedExtensions = /jpe?g|png|webp|gif|bmp/i;
   const ext = path.extname(file.originalname).toLowerCase();
@@ -88,21 +74,14 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-/**
- * Multer upload middleware instance (5MB file size limit)
- */
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5 MB
+    fileSize: 5 * 1024 * 1024 
   }
 });
 
-/**
- * Global Error Handling Middleware
- * Catches all errors thrown in routes or controllers and returns a standardized JSON response.
- */
 function errorHandler(err, req, res, next) {
   console.error('Error caught by global handler:', err);
   res.header('Access-Control-Allow-Origin', '*');

@@ -1,4 +1,4 @@
--- Users table to store credentials and roles
+
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -10,7 +10,6 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Vendors table to store shop details and verification documentation
 CREATE TABLE vendors (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -31,7 +30,6 @@ CREATE TABLE vendors (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Customers table to store profile info for buying clients
 CREATE TABLE customers (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -40,19 +38,16 @@ CREATE TABLE customers (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Brands table to store mobile device manufacturers
 CREATE TABLE brands (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
--- Part Types table to store category names of mobile parts
 CREATE TABLE part_types (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
--- Parts table to store inventory listings of vendor items
 CREATE TABLE parts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   vendor_id INT NOT NULL,
@@ -73,7 +68,6 @@ CREATE TABLE parts (
   FOREIGN KEY (part_type_id) REFERENCES part_types(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Requests table to map customer queries to specific parts and vendors
 CREATE TABLE requests (
   id INT AUTO_INCREMENT PRIMARY KEY,
   customer_id INT NOT NULL,
@@ -100,7 +94,6 @@ CREATE TABLE requests (
   FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Commissions table to track payments from completed transactions
 CREATE TABLE commissions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   request_id INT NOT NULL UNIQUE,
@@ -115,7 +108,6 @@ CREATE TABLE commissions (
   FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Chat Rooms table for customer-vendor messaging
 CREATE TABLE chat_rooms (
   id INT AUTO_INCREMENT PRIMARY KEY,
   customer_id INT NOT NULL,
@@ -127,7 +119,6 @@ CREATE TABLE chat_rooms (
   FOREIGN KEY (part_id) REFERENCES parts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- Reviews table to store customer feedback on vendor service
 CREATE TABLE reviews (
   id INT AUTO_INCREMENT PRIMARY KEY,
   request_id INT NOT NULL UNIQUE,
@@ -141,7 +132,6 @@ CREATE TABLE reviews (
   FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Reports table for logging user complaints and administrative review
 CREATE TABLE reports (
   id INT AUTO_INCREMENT PRIMARY KEY,
   reporter_user_id INT NOT NULL,
@@ -156,7 +146,6 @@ CREATE TABLE reports (
   FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Notifications table to hold user-directed alert messages
 CREATE TABLE notifications (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,

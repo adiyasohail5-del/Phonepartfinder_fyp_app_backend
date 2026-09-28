@@ -11,9 +11,6 @@ function generate6DigitOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-/**
- * Helper to validate user fields for registration
- */
 function validateRegistration(res, { name, email, password }) {
   if (!name || !email || !password) {
     res.status(400);
@@ -29,9 +26,6 @@ function validateRegistration(res, { name, email, password }) {
   }
 }
 
-/**
- * Register a Customer
- */
 async function registerCustomer(req, res, next) {
   try {
     const { name, email, password, phone, city } = req.body;
@@ -42,10 +36,9 @@ async function registerCustomer(req, res, next) {
       throw new Error('City is required for customers');
     }
 
-    // Check if email already exists
     const existingUser = await UserModel.findByEmail(email);
     if (existingUser) {
-      res.status(409); // Conflict
+      res.status(409);
       throw new Error('Email address already registered');
     }
 
@@ -60,10 +53,8 @@ async function registerCustomer(req, res, next) {
       otp
     });
 
-    // Create customer profile
     await CustomerModel.create({ userId, city });
 
-    // Send OTP via Mailtrap
     try {
       await sendOtpEmail(email, otp);
     } catch (mailErr) {
@@ -81,9 +72,6 @@ async function registerCustomer(req, res, next) {
   }
 }
 
-/**
- * Register a Vendor
- */
 async function registerVendor(req, res, next) {
   try {
     const {
@@ -105,14 +93,12 @@ async function registerVendor(req, res, next) {
       throw new Error('Required vendor fields missing: shop_name, city, address');
     }
 
-    // Check if email already exists
     const existingUser = await UserModel.findByEmail(email);
     if (existingUser) {
       res.status(409);
       throw new Error('Email address already registered');
     }
 
-    // Handle shopPhoto and cnicPhoto file uploads
     let shopPhotoUrl = null;
     let cnicPhotoUrl = null;
 
@@ -136,7 +122,6 @@ async function registerVendor(req, res, next) {
       otp
     });
 
-    // Create vendor profile with shop photo and CNIC photo
     await VendorModel.create({
       userId,
       shopName: shop_name,
@@ -149,7 +134,6 @@ async function registerVendor(req, res, next) {
       longitude
     });
 
-    // Create initial Security Deposit notification
     try {
       await NotificationModel.create({
         userId,
@@ -161,7 +145,6 @@ async function registerVendor(req, res, next) {
       console.error('Notification creation failed for vendor deposit:', notifErr.message);
     }
 
-    // Send OTP via Mailtrap
     try {
       await sendOtpEmail(email, otp);
     } catch (mailErr) {
@@ -179,9 +162,6 @@ async function registerVendor(req, res, next) {
   }
 }
 
-/**
- * Resends / Sends a 6-digit Email Verification OTP
- */
 async function sendOtp(req, res, next) {
   try {
     const { email } = req.body;
@@ -210,9 +190,6 @@ async function sendOtp(req, res, next) {
   }
 }
 
-/**
- * Verifies submitted Email OTP code
- */
 async function verifyOtp(req, res, next) {
   try {
     const { email, otp } = req.body;
@@ -241,9 +218,6 @@ async function verifyOtp(req, res, next) {
   }
 }
 
-/**
- * Login User
- */
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
@@ -253,27 +227,23 @@ async function login(req, res, next) {
       throw new Error('Email and password are required');
     }
 
-    // Search user by email
     const user = await UserModel.findByEmail(email);
     if (!user) {
       res.status(401);
       throw new Error('Invalid email or password');
     }
 
-    // Compare passwords
     const passwordMatch = await comparePassword(password, user.password);
     if (!passwordMatch) {
       res.status(401);
       throw new Error('Invalid email or password');
     }
 
-    // Check user block status
     if (user.status === 'blocked') {
       res.status(403);
       throw new Error('Your account is blocked. Please contact an administrator.');
     }
 
-    // Check Email OTP Verification status
     if (user.is_email_verified == 0 || user.is_email_verified == false) {
       const otp = generate6DigitOtp();
       await UserModel.updateOtpById(user.id, otp);
@@ -291,7 +261,6 @@ async function login(req, res, next) {
       });
     }
 
-    // Load respective profile info
     let profile = {};
     if (user.role === 'customer') {
       const customerProfile = await CustomerModel.findByUserId(user.id);
@@ -323,7 +292,6 @@ async function login(req, res, next) {
       }
     }
 
-    // Generate JWT token
     const token = generateToken({ id: user.id, role: user.role });
 
     res.json({
@@ -344,9 +312,6 @@ async function login(req, res, next) {
   }
 }
 
-/**
- * Request Password Reset OTP
- */
 async function forgotPassword(req, res, next) {
   try {
     const { email } = req.body;
@@ -379,9 +344,6 @@ async function forgotPassword(req, res, next) {
   }
 }
 
-/**
- * Reset Password with OTP Code
- */
 async function resetPassword(req, res, next) {
   try {
     const { email, otp, new_password } = req.body;
@@ -416,9 +378,6 @@ async function resetPassword(req, res, next) {
   }
 }
 
-/**
- * User (Customer or Vendor) requests account deletion
- */
 async function requestAccountDeletion(req, res, next) {
   try {
     const userId = req.user.id;
@@ -433,7 +392,6 @@ async function requestAccountDeletion(req, res, next) {
 
     await UserModel.requestDeletion(userId, cleanReason);
 
-    // Notify Admins
     try {
       const admins = await UserModel.getAdminUsers();
       for (const admin of admins) {

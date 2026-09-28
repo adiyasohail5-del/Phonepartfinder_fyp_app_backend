@@ -1,9 +1,6 @@
 const ReportModel = require('../models/ReportModel');
 const NotificationModel = require('../models/NotificationModel');
 
-/**
- * Submits a new complaint report against another user.
- */
 async function submitReport(req, res, next) {
   try {
     const reporterUserId = req.user.id;
@@ -47,9 +44,6 @@ async function submitReport(req, res, next) {
   }
 }
 
-/**
- * Retrieves reports submitted by the authenticated user.
- */
 async function getMyReports(req, res, next) {
   try {
     const reporterUserId = req.user.id;
@@ -65,9 +59,6 @@ async function getMyReports(req, res, next) {
   }
 }
 
-/**
- * Admin controller to retrieve all submitted reports.
- */
 async function getAllReportsAdmin(req, res, next) {
   try {
     const { status } = req.query;
@@ -83,9 +74,6 @@ async function getAllReportsAdmin(req, res, next) {
   }
 }
 
-/**
- * Admin controller to mark a report as resolved and notify reporter.
- */
 async function resolveReport(req, res, next) {
   try {
     const reportId = req.params.id;
@@ -98,7 +86,6 @@ async function resolveReport(req, res, next) {
 
     await ReportModel.updateStatus(reportId, 'resolved');
 
-    // Trigger notification to original reporter (wrapped in try/catch)
     try {
       await NotificationModel.create({
         userId: report.reporter_user_id,
@@ -119,9 +106,6 @@ async function resolveReport(req, res, next) {
   }
 }
 
-/**
- * Admin controller to mark a report as dismissed and notify reporter.
- */
 async function dismissReport(req, res, next) {
   try {
     const reportId = req.params.id;
@@ -134,7 +118,6 @@ async function dismissReport(req, res, next) {
 
     await ReportModel.updateStatus(reportId, 'dismissed');
 
-    // Trigger notification to original reporter (wrapped in try/catch)
     try {
       await NotificationModel.create({
         userId: report.reporter_user_id,

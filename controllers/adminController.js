@@ -5,9 +5,6 @@ const RequestModel = require('../models/RequestModel');
 const SystemSettingModel = require('../models/SystemSettingModel');
 const NotificationModel = require('../models/NotificationModel');
 
-/**
- * Retrieves all vendors, optionally filtered by status ('pending', 'approved', 'rejected').
- */
 async function getAllVendors(req, res, next) {
   try {
     const { status } = req.query;
@@ -23,16 +20,12 @@ async function getAllVendors(req, res, next) {
   }
 }
 
-/**
- * Sets vendor verification status to 'approved'.
- */
 async function approveVendor(req, res, next) {
   try {
     const vendorId = req.params.id;
 
     await VendorModel.updateVerificationStatus(vendorId, 'approved');
 
-    // Trigger notification to vendor user (wrapped in try/catch)
     try {
       const vendorRecord = await VendorModel.findById(vendorId);
       if (vendorRecord) {
@@ -56,16 +49,12 @@ async function approveVendor(req, res, next) {
   }
 }
 
-/**
- * Sets vendor verification status to 'rejected'.
- */
 async function rejectVendor(req, res, next) {
   try {
     const vendorId = req.params.id;
 
     await VendorModel.updateVerificationStatus(vendorId, 'rejected');
 
-    // Trigger notification to vendor user (wrapped in try/catch)
     try {
       const vendorRecord = await VendorModel.findById(vendorId);
       if (vendorRecord) {
@@ -89,9 +78,6 @@ async function rejectVendor(req, res, next) {
   }
 }
 
-/**
- * Retrieves all registered users, optionally filtered by role ('vendor' or 'customer').
- */
 async function getAllUsers(req, res, next) {
   try {
     const { role } = req.query;
@@ -107,9 +93,6 @@ async function getAllUsers(req, res, next) {
   }
 }
 
-/**
- * Blocks a user account by setting status to 'blocked'.
- */
 async function blockUser(req, res, next) {
   try {
     const userId = req.params.id;
@@ -123,9 +106,6 @@ async function blockUser(req, res, next) {
   }
 }
 
-/**
- * Unblocks a user account by setting status to 'active'.
- */
 async function unblockUser(req, res, next) {
   try {
     const userId = req.params.id;
@@ -139,9 +119,6 @@ async function unblockUser(req, res, next) {
   }
 }
 
-/**
- * Returns dashboard statistical counters.
- */
 async function getDashboardStats(req, res, next) {
   try {
     const [
@@ -179,10 +156,6 @@ async function getDashboardStats(req, res, next) {
   }
 }
 
-
-/**
- * Public & Vendor endpoint to fetch current system settings
- */
 async function getPublicSettings(req, res, next) {
   try {
     const settingsMap = await SystemSettingModel.getPublicSettings();
@@ -195,9 +168,6 @@ async function getPublicSettings(req, res, next) {
   }
 }
 
-/**
- * Admin updates system settings (Security Deposit Amount, Phone, Commission Rate %)
- */
 async function updateSystemSettings(req, res, next) {
   try {
     const { security_deposit_amount, security_deposit_phone, commission_rate_percent } = req.body;
@@ -217,9 +187,6 @@ async function updateSystemSettings(req, res, next) {
   }
 }
 
-/**
- * Sets vendor security_deposit_status to 'paid'.
- */
 async function verifyVendorDeposit(req, res, next) {
   try {
     const vendorId = req.params.id;
@@ -239,7 +206,6 @@ async function verifyVendorDeposit(req, res, next) {
     await VendorModel.updateDepositStatus(vendorId, 'paid');
 
     try {
-      // Mark older deposit notifications as read to prevent spam
       await NotificationModel.markReadByMessagePattern(vendorRecord.user_id, '%Security Deposit%');
 
       await NotificationModel.create({
@@ -261,9 +227,6 @@ async function verifyVendorDeposit(req, res, next) {
   }
 }
 
-/**
- * Sets vendor security_deposit_status to 'rejected'.
- */
 async function rejectVendorDeposit(req, res, next) {
   try {
     const vendorId = req.params.id;
@@ -292,9 +255,6 @@ async function rejectVendorDeposit(req, res, next) {
   }
 }
 
-/**
- * Admin Audit: View ALL system notification logs across all users
- */
 async function getAllNotificationsAdmin(req, res, next) {
   try {
     const rows = await NotificationModel.getAllAdmin();
@@ -308,9 +268,6 @@ async function getAllNotificationsAdmin(req, res, next) {
   }
 }
 
-/**
- * Admin Superior: Send/Broadcast custom notification to specific user or groups (vendors, customers, all)
- */
 async function broadcastNotificationAdmin(req, res, next) {
   try {
     const { target_role, target_user_id, message, type } = req.body;
@@ -340,9 +297,6 @@ async function broadcastNotificationAdmin(req, res, next) {
   }
 }
 
-/**
-  * Admin: Get all verified platform sales with full delivery proofs and party details
-  */
 async function getSalesProof(req, res, next) {
   try {
     const list = await RequestModel.getSalesProofListAdmin();
@@ -360,9 +314,6 @@ async function getSalesProof(req, res, next) {
   }
 }
 
-/**
-  * Admin: Get 360-degree complete user profile details (Vendor or Customer analytics)
-  */
 async function getUser360(req, res, next) {
   try {
     const userId = req.params.id;
@@ -386,9 +337,6 @@ async function getUser360(req, res, next) {
   }
 }
 
-/**
-  * Admin: Permanently delete a user account and safely cascade cleanup their data
-  */
 async function deleteUserAdmin(req, res, next) {
   try {
     const userId = req.params.id;

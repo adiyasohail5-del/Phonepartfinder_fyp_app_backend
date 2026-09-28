@@ -11,11 +11,9 @@ const { errorHandler } = require('./middleware');
 const app = express();
 const PORT = process.env.PORT || 3005;
 
-// Ensure upload directories exist
 fs.mkdirSync(path.join(__dirname, 'uploads/parts'), { recursive: true });
 fs.mkdirSync(path.join(__dirname, 'uploads/commissions'), { recursive: true });
 
-// Bulletproof CORS Configuration
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -27,7 +25,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
-// Explicit fallback CORS middleware for all incoming requests and preflights
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
@@ -40,7 +37,6 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Helper for serving uploads with fallback between commissions and parts
 function handleUploadStatic(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   const { folder, filename } = req.params;
@@ -48,7 +44,6 @@ function handleUploadStatic(req, res, next) {
   if (fs.existsSync(targetPath)) {
     return res.sendFile(targetPath);
   }
-  // Fallback: If requested in commissions but saved in parts
   if (folder === 'commissions') {
     const fallbackPath = path.join(__dirname, 'uploads', 'parts', filename);
     if (fs.existsSync(fallbackPath)) {

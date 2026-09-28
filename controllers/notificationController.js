@@ -1,8 +1,5 @@
 const NotificationModel = require('../models/NotificationModel');
 
-/**
- * Retrieves all notifications for the authenticated user.
- */
 async function getMyNotifications(req, res, next) {
   try {
     const userId = req.user.id;
@@ -18,9 +15,6 @@ async function getMyNotifications(req, res, next) {
   }
 }
 
-/**
- * Returns the unread notification count for the authenticated user.
- */
 async function getUnreadCount(req, res, next) {
   try {
     const userId = req.user.id;
@@ -35,9 +29,6 @@ async function getUnreadCount(req, res, next) {
   }
 }
 
-/**
- * Marks a single notification as read.
- */
 async function markAsRead(req, res, next) {
   try {
     const userId = req.user.id;
@@ -49,7 +40,6 @@ async function markAsRead(req, res, next) {
       throw new Error('Notification not found');
     }
 
-    // Ownership check
     if (notification.user_id !== userId) {
       return res.status(403).json({
         success: false,
@@ -68,9 +58,6 @@ async function markAsRead(req, res, next) {
   }
 }
 
-/**
- * Marks all notifications for the authenticated user as read.
- */
 async function markAllAsRead(req, res, next) {
   try {
     const userId = req.user.id;

@@ -4,8 +4,8 @@ require('dotenv').config();
 const poolConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
   port: parseInt(process.env.DB_PORT || '3306', 10),
-  user: process.env.DB_USER || '',
-  password: process.env.DB_PASSWORD || '',
+  user: process.env.DB_USER || 'Sidadi',
+  password: process.env.DB_PASSWORD || 'Minata',
   database: process.env.DB_NAME || 'phonepartsfinder',
   waitForConnections: true,
   connectionLimit: 10,

@@ -178,25 +178,21 @@ class UserModel {
     const vendor = vendorRows[0];
     const vendorId = vendor.id;
 
-    // 1. Total Parts in Inventory
     const [partsCount] = await pool.execute('SELECT COUNT(*) as count FROM parts WHERE vendor_id = ?', [vendorId]);
     const totalParts = partsCount[0].count;
 
-    // 2. Parts Sold (Delivered)
     const [soldCount] = await pool.execute(
       "SELECT COUNT(*) as count FROM requests WHERE vendor_id = ? AND (status = 'delivered' OR verified_at IS NOT NULL)",
       [vendorId]
     );
     const totalSold = soldCount[0].count;
 
-    // 3. Gross Earnings (Delivered parts total revenue)
     const [earnings] = await pool.execute(
       "SELECT COALESCE(SUM(total_amount), 0) as total FROM requests WHERE vendor_id = ? AND (status = 'delivered' OR verified_at IS NOT NULL)",
       [vendorId]
     );
     const totalEarnings = parseFloat(earnings[0].total) || 0.0;
 
-    // 4. Commission Breakdown
     const [commPayable] = await pool.execute('SELECT COALESCE(SUM(amount), 0) as total FROM commissions WHERE vendor_id = ?', [vendorId]);
     const totalCommissionPayable = parseFloat(commPayable[0].total) || 0.0;
 
@@ -204,7 +200,6 @@ class UserModel {
     const totalCommissionPaid = parseFloat(commPaid[0].total) || 0.0;
     const commissionPending = Math.max(0, totalCommissionPayable - totalCommissionPaid);
 
-    // 5. Parts List
     const [partsList] = await pool.execute(`
       SELECT p.*, b.name as brand_name, pt.name as part_type_name
       FROM parts p
@@ -214,7 +209,6 @@ class UserModel {
       ORDER BY p.created_at DESC
     `, [vendorId]);
 
-    // 6. Requests / Leads List
     const [requestsList] = await pool.execute(`
       SELECT r.*, p.model_name, p.price as part_price, u.name as customer_name, u.phone as customer_phone
       FROM requests r
@@ -262,29 +256,24 @@ class UserModel {
     const customer = custRows[0];
     const customerId = customer.id;
 
-    // 1. Total Requests Placed
     const [reqCount] = await pool.execute('SELECT COUNT(*) as count FROM requests WHERE customer_id = ?', [customerId]);
     const totalRequests = reqCount[0].count;
 
-    // 2. Completed / Delivered Purchases
     const [completedCount] = await pool.execute(
       "SELECT COUNT(*) as count FROM requests WHERE customer_id = ? AND (status = 'delivered' OR verified_at IS NOT NULL)",
       [customerId]
     );
     const totalCompleted = completedCount[0].count;
 
-    // 3. Total Money Spent (Rs.)
     const [spentTotal] = await pool.execute(
       "SELECT COALESCE(SUM(total_amount), 0) as total FROM requests WHERE customer_id = ? AND (status = 'delivered' OR verified_at IS NOT NULL)",
       [customerId]
     );
     const totalSpent = parseFloat(spentTotal[0].total) || 0.0;
 
-    // 4. Reviews Submitted Count
     const [revCount] = await pool.execute('SELECT COUNT(*) as count FROM reviews WHERE customer_id = ?', [customerId]);
     const totalReviews = revCount[0].count;
 
-    // 5. Purchase / Request History
     const [ordersList] = await pool.execute(`
       SELECT 
         r.*,

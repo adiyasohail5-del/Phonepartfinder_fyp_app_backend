@@ -2,21 +2,17 @@ const UserModel = require('../models/UserModel');
 const VendorModel = require('../models/VendorModel');
 const PartModel = require('../models/PartModel');
 
-/**
- * Gets the profile of the logged-in vendor.
- */
+
 async function getMyProfile(req, res, next) {
   try {
     const userId = req.user.id;
     
-    // Find user
     const user = await UserModel.findById(userId);
     if (!user) {
       res.status(404);
       throw new Error('User account not found');
     }
 
-    // Find vendor profile
     const vendorProfile = await VendorModel.findByUserId(userId);
     if (!vendorProfile) {
       res.status(404);
@@ -51,14 +47,11 @@ async function getMyProfile(req, res, next) {
   }
 }
 
-/**
- * Updates profile fields for the logged-in vendor.
- */
+
 async function updateMyProfile(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Find vendor profile
     const vendorProfile = await VendorModel.findByUserId(userId);
     if (!vendorProfile) {
       res.status(404);
@@ -84,9 +77,7 @@ async function updateMyProfile(req, res, next) {
   }
 }
 
-/**
- * Submits vendor security deposit receipt URL.
- */
+
 async function submitSecurityDepositProof(req, res, next) {
   try {
     const userId = req.user.id;
@@ -117,9 +108,6 @@ async function submitSecurityDepositProof(req, res, next) {
   }
 }
 
-/**
- * Gets verified sold parts history for the logged-in vendor.
- */
 async function getMySoldParts(req, res, next) {
   try {
     const userId = req.user.id;

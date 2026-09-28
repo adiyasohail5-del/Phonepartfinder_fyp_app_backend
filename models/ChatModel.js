@@ -92,41 +92,43 @@ class ChatModel {
 
 
   static async getRoomsForParticipant(role, participantId) {
-    let query = '';
-    if (role === 'customer') {
-      query = `
-        SELECT 
-          cr.*,
-          p.model_name,
-          p.image_url,
-          v.shop_name as other_name,
-          v.city as other_city,
-          b.name as brand_name
-        FROM chat_rooms cr
-        JOIN vendors v ON cr.vendor_id = v.id
-        JOIN parts p ON cr.part_id = p.id
-        LEFT JOIN brands b ON p.brand_id = b.id
-        WHERE cr.customer_id = ?
-        ORDER BY cr.created_at DESC
-      `;
-    } else if (role === 'vendor') {
-      query = `
-        SELECT 
-          cr.*,
-          p.model_name,
-          p.image_url,
-          u.name as other_name,
-          c.city as other_city,
-          b.name as brand_name
-        FROM chat_rooms cr
-        JOIN customers c ON cr.customer_id = c.id
-        JOIN users u ON c.user_id = u.id
-        JOIN parts p ON cr.part_id = p.id
-        LEFT JOIN brands b ON p.brand_id = b.id
-        WHERE cr.vendor_id = ?
-        ORDER BY cr.created_at DESC
-      `;
-    }
+  let query = '';
+  if (role === 'customer') {
+    query = `
+      SELECT 
+        cr.*,
+        p.model_name,
+        p.image_url,
+        v.shop_name as other_name,
+        v.city as other_city,
+        b.name as brand_name
+      FROM chat_rooms cr
+      JOIN vendors v ON cr.vendor_id = v.id
+      JOIN parts p ON cr.part_id = p.id
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE cr.customer_id = ?
+        AND EXISTS (SELECT 1 FROM chat_messages cm WHERE cm.room_id = cr.id)
+      ORDER BY cr.created_at DESC
+    `;
+  } else if (role === 'vendor') {
+    query = `
+      SELECT 
+        cr.*,
+        p.model_name,
+        p.image_url,
+        u.name as other_name,
+        c.city as other_city,
+        b.name as brand_name
+      FROM chat_rooms cr
+      JOIN customers c ON cr.customer_id = c.id
+      JOIN users u ON c.user_id = u.id
+      JOIN parts p ON cr.part_id = p.id
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE cr.vendor_id = ?
+        AND EXISTS (SELECT 1 FROM chat_messages cm WHERE cm.room_id = cr.id)
+      ORDER BY cr.created_at DESC
+    `;
+  }
 
     const [rows] = await pool.execute(query, [participantId]);
     return rows;

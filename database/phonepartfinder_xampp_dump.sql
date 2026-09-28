@@ -105,9 +105,6 @@ CREATE TABLE `parts` (
   FOREIGN KEY (`part_type_id`) REFERENCES `part_types`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `requests`
--- ----------------------------------------------------------------------------
 DROP TABLE IF EXISTS `requests`;
 CREATE TABLE `requests` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -135,9 +132,7 @@ CREATE TABLE `requests` (
   FOREIGN KEY (`part_id`) REFERENCES `parts`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `commissions`
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS `commissions`;
 CREATE TABLE `commissions` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -153,9 +148,7 @@ CREATE TABLE `commissions` (
   FOREIGN KEY (`verified_by`) REFERENCES `users`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `reviews`
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS `reviews`;
 CREATE TABLE `reviews` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -170,9 +163,7 @@ CREATE TABLE `reviews` (
   FOREIGN KEY (`vendor_id`) REFERENCES `vendors`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `reports`
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS `reports`;
 CREATE TABLE `reports` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -188,9 +179,7 @@ CREATE TABLE `reports` (
   FOREIGN KEY (`request_id`) REFERENCES `requests`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `notifications`
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS `notifications`;
 CREATE TABLE `notifications` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -202,9 +191,7 @@ CREATE TABLE `notifications` (
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `system_settings`
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS `system_settings`;
 CREATE TABLE `system_settings` (
   `setting_key` VARCHAR(50) PRIMARY KEY,
@@ -212,9 +199,7 @@ CREATE TABLE `system_settings` (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `chat_rooms`
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS `chat_rooms`;
 CREATE TABLE `chat_rooms` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -227,9 +212,7 @@ CREATE TABLE `chat_rooms` (
   FOREIGN KEY (`part_id`) REFERENCES `parts`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ----------------------------------------------------------------------------
--- Table structure for `chat_messages`
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS `chat_messages`;
 CREATE TABLE `chat_messages` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -241,12 +224,10 @@ CREATE TABLE `chat_messages` (
   FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Re-enable Foreign Key Checks
+
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ----------------------------------------------------------------------------
--- Seed Data: System Settings
--- ----------------------------------------------------------------------------
+
 INSERT INTO `system_settings` (`setting_key`, `setting_value`) VALUES
 ('security_deposit_amount', '500'),
 ('security_deposit_phone', '03080780593'),
@@ -254,9 +235,7 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`) VALUES
 ('max_vendor_cancellations', '3')
 ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 
--- ----------------------------------------------------------------------------
--- Seed Data: Brands
--- ----------------------------------------------------------------------------
+
 INSERT INTO `brands` (`name`) VALUES
 ('Apple'),
 ('Samsung'),
@@ -270,9 +249,7 @@ INSERT INTO `brands` (`name`) VALUES
 ('Huawei')
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
--- ----------------------------------------------------------------------------
--- Seed Data: Part Types
--- ----------------------------------------------------------------------------
+
 INSERT INTO `part_types` (`name`) VALUES
 ('LCD Display Screen'),
 ('Battery'),
@@ -283,11 +260,9 @@ INSERT INTO `part_types` (`name`) VALUES
 ('Motherboard / Logic Board')
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
--- ----------------------------------------------------------------------------
--- Seed Data: Default Admin User (Email: finderteamphone@gmail.com, Password: admin1234)
--- ----------------------------------------------------------------------------
+
 INSERT INTO `users` (`name`, `email`, `password`, `phone`, `role`, `status`, `is_email_verified`) VALUES
 ('System Admin', 'finderteamphone@gmail.com', '$2b$10$IlsE4yCKZzNe.er6p28Jv.goGLtCeneHgWtpQFdYkUyFjhFPFga32', '+923000000000', 'admin', 'active', 1)
 ON DUPLICATE KEY UPDATE `email` = VALUES(`email`), `password` = VALUES(`password`), `status` = 'active';
 
--- End of SQL Export Dump
+

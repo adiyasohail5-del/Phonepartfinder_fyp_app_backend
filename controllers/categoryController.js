@@ -1,8 +1,5 @@
 const CategoryModel = require('../models/CategoryModel');
 
-/**
- * Public controller to get all brands.
- */
 async function getBrands(req, res, next) {
   try {
     const brands = await CategoryModel.getAllBrands();
@@ -15,9 +12,6 @@ async function getBrands(req, res, next) {
   }
 }
 
-/**
- * Public controller to get all part types.
- */
 async function getPartTypes(req, res, next) {
   try {
     const partTypes = await CategoryModel.getAllPartTypes();
@@ -30,9 +24,6 @@ async function getPartTypes(req, res, next) {
   }
 }
 
-/**
- * Admin controller to add a brand.
- */
 async function addBrand(req, res, next) {
   try {
     const { name } = req.body;
@@ -52,9 +43,6 @@ async function addBrand(req, res, next) {
   }
 }
 
-/**
- * Admin controller to update a brand.
- */
 async function updateBrand(req, res, next) {
   try {
     const brandId = req.params.id;
@@ -75,9 +63,6 @@ async function updateBrand(req, res, next) {
   }
 }
 
-/**
- * Admin controller to delete a brand.
- */
 async function deleteBrand(req, res, next) {
   try {
     const brandId = req.params.id;
@@ -91,9 +76,6 @@ async function deleteBrand(req, res, next) {
   }
 }
 
-/**
- * Admin controller to add a part type.
- */
 async function addPartType(req, res, next) {
   try {
     const { name } = req.body;
@@ -113,9 +95,6 @@ async function addPartType(req, res, next) {
   }
 }
 
-/**
- * Admin controller to update a part type.
- */
 async function updatePartType(req, res, next) {
   try {
     const partTypeId = req.params.id;
@@ -136,9 +115,6 @@ async function updatePartType(req, res, next) {
   }
 }
 
-/**
- * Admin controller to delete a part type.
- */
 async function deletePartType(req, res, next) {
   try {
     const partTypeId = req.params.id;

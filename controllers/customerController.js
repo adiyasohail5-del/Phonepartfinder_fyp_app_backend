@@ -1,21 +1,16 @@
 const UserModel = require('../models/UserModel');
 const CustomerModel = require('../models/CustomerModel');
 
-/**
- * Gets the profile of the logged-in customer.
- */
 async function getMyProfile(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Find user
     const user = await UserModel.findById(userId);
     if (!user) {
       res.status(404);
       throw new Error('User account not found');
     }
 
-    // Find customer profile
     const customerProfile = await CustomerModel.findByUserId(userId);
     if (!customerProfile) {
       res.status(404);
@@ -41,14 +36,10 @@ async function getMyProfile(req, res, next) {
   }
 }
 
-/**
- * Updates profile info (name, phone, city) for the logged-in customer.
- */
 async function updateMyProfile(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Find customer profile
     const customerProfile = await CustomerModel.findByUserId(userId);
     if (!customerProfile) {
       res.status(404);

@@ -1,6 +1,5 @@
 const nodemailer = require('nodemailer');
 
-// Real Gmail SMTP Transport Configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -9,11 +8,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-/**
- * Sends a 6-digit Email Verification OTP via Gmail
- * @param {string} toEmail - Recipient email address
- * @param {string} otp - 6-digit OTP code
- */
 async function sendOtpEmail(toEmail, otp) {
   const mailOptions = {
     from: '"Phone Part Finder" <finderteamphone@gmail.com>',

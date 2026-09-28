@@ -4,7 +4,6 @@ const VendorModel = require('../models/VendorModel');
 const CustomerModel = require('../models/CustomerModel');
 const NotificationModel = require('../models/NotificationModel');
 
-// Helper to escape HTML characters for basic input sanitization
 function escapeHtml(text) {
   if (typeof text !== 'string') return '';
   return text
@@ -15,9 +14,6 @@ function escapeHtml(text) {
     .replace(/'/g, '&#039;');
 }
 
-/**
- * Create or retrieve a chat room for customer-vendor-part combination
- */
 async function createOrGetRoom(req, res, next) {
   try {
     const userId = req.user.id;
@@ -46,7 +42,6 @@ async function createOrGetRoom(req, res, next) {
       });
     }
 
-    // Find the part and its vendor
     const part = await PartModel.findById(part_id);
     if (!part) {
       return res.status(404).json({
@@ -56,7 +51,6 @@ async function createOrGetRoom(req, res, next) {
     }
     const vendorId = part.vendor_id;
 
-    // Check if room already exists
     let room = await ChatModel.findRoom(customerId, vendorId, part_id);
 
     if (!room) {
@@ -72,9 +66,6 @@ async function createOrGetRoom(req, res, next) {
   }
 }
 
-/**
- * Get active chat rooms for the logged-in user
- */
 async function getMyRooms(req, res, next) {
   try {
     const userId = req.user.id;
@@ -103,16 +94,13 @@ async function getMyRooms(req, res, next) {
   }
 }
 
-/**
- * Fetch messages inside a specific room (Authorized participants/admin only)
- */
+
 async function getRoomMessages(req, res, next) {
   try {
     const userId = req.user.id;
     const role = req.user.role;
     const roomId = req.params.roomId;
 
-    // Retrieve room
     const room = await ChatModel.findRoomById(roomId);
     if (!room) {
       return res.status(404).json({
@@ -121,7 +109,6 @@ async function getRoomMessages(req, res, next) {
       });
     }
 
-    // Verify access permissions (Participants or System Admin only)
     if (role !== 'admin') {
       const participantId = await ChatModel.getCustomerOrVendorId(userId, role);
       const isAllowed = 
@@ -147,9 +134,6 @@ async function getRoomMessages(req, res, next) {
   }
 }
 
-/**
- * Send a message to a room (Participants only)
- */
 async function sendMessage(req, res, next) {
   try {
     const userId = req.user.id;
@@ -171,7 +155,6 @@ async function sendMessage(req, res, next) {
       });
     }
 
-    // Enforce 500 character limit
     const cleanMessage = escapeHtml(message.trim());
     if (cleanMessage.length > 500) {
       return res.status(400).json({
@@ -180,7 +163,6 @@ async function sendMessage(req, res, next) {
       });
     }
 
-    // Retrieve room
     const room = await ChatModel.findRoomById(roomId);
     if (!room) {
       return res.status(404).json({
@@ -189,7 +171,6 @@ async function sendMessage(req, res, next) {
       });
     }
 
-    // Verify user belongs to this room
     const participantId = await ChatModel.getCustomerOrVendorId(userId, role);
     const isAllowed = 
       (role === 'customer' && room.customer_id === participantId) ||
@@ -204,7 +185,6 @@ async function sendMessage(req, res, next) {
 
     const createdMessage = await ChatModel.createMessage(roomId, userId, cleanMessage);
 
-    // Trigger notification to the other participant
     try {
       let recipientUserId = null;
       if (role === 'customer') {

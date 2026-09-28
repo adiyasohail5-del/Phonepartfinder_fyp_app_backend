@@ -2,14 +2,9 @@ const PartModel = require('../models/PartModel');
 const VendorModel = require('../models/VendorModel');
 const RequestModel = require('../models/RequestModel');
 
-/**
- * Add a new part (Vendor only, expects multipart/form-data)
- */
 async function addPart(req, res, next) {
   try {
     const userId = req.user.id;
-
-    // Find vendor profile
     const vendor = await VendorModel.findByUserId(userId);
     if (!vendor) {
       res.status(404);
@@ -35,7 +30,6 @@ async function addPart(req, res, next) {
       : null;
 
     if (!cleanBarcode) {
-      // Auto-generate unique Authenticity / QR Token for standard/used products without OEM barcode
       cleanBarcode = `PPF-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
     }
 
@@ -59,7 +53,6 @@ async function addPart(req, res, next) {
     const originalPhotoFile = req.files['originalPhoto'][0];
     const original_photo_url = `/uploads/parts/${originalPhotoFile.filename}`;
     
-    // If vendor provided a separate barcode photo, use it; otherwise fallback to the part photo
     const barcodePhotoFile = req.files['barcodePhoto'] ? req.files['barcodePhoto'][0] : null;
     const barcode_photo_url = barcodePhotoFile 
       ? `/uploads/parts/${barcodePhotoFile.filename}`
@@ -95,14 +88,10 @@ async function addPart(req, res, next) {
   }
 }
 
-/**
- * Get all parts for the logged-in vendor
- */
 async function getMyParts(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Find vendor profile
     const vendor = await VendorModel.findByUserId(userId);
     if (!vendor) {
       res.status(404);
@@ -120,14 +109,10 @@ async function getMyParts(req, res, next) {
   }
 }
 
-/**
- * Update a part owned by the logged-in vendor
- */
 async function updatePart(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Find vendor profile
     const vendor = await VendorModel.findByUserId(userId);
     if (!vendor) {
       res.status(404);
@@ -136,7 +121,6 @@ async function updatePart(req, res, next) {
 
     const partId = req.params.id;
 
-    // Get part by ID
     const part = await PartModel.findById(partId);
     if (!part) {
       res.status(404);
@@ -203,14 +187,10 @@ async function updatePart(req, res, next) {
   }
 }
 
-/**
- * Delete a part owned by the logged-in vendor
- */
 async function deletePart(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Find vendor profile
     const vendor = await VendorModel.findByUserId(userId);
     if (!vendor) {
       res.status(404);
@@ -219,7 +199,6 @@ async function deletePart(req, res, next) {
 
     const partId = req.params.id;
 
-    // Get part by ID
     const part = await PartModel.findById(partId);
     if (!part) {
       res.status(404);
@@ -244,9 +223,6 @@ async function deletePart(req, res, next) {
   }
 }
 
-/**
- * Public detail/verification endpoint (No Auth Required)
- */
 async function getPartDetails(req, res, next) {
   try {
     const partId = req.params.id;
